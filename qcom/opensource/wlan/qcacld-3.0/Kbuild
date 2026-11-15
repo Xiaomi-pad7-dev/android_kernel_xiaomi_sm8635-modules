@@ -48,6 +48,11 @@ endif
 
 WLAN_PLATFORM_ROOT := $(WLAN_ROOT)/../platform
 
+# Xiaomi Pad 7 (uke)
+ifeq ($(lastword $(subst _, ,$(TARGET_PRODUCT))),uke)
+ccflags-y += -DCONFIG_TARGET_PRODUCT_UKE
+endif
+
 ifeq ($(CONFIG_ARCH_PINEAPPLE), y)
 CONFIG_QCA_CLD_WLAN_PROFILE=pineapple_gki_$(WLAN_PROFILE)
 

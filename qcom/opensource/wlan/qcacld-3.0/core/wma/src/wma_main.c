@@ -5651,6 +5651,13 @@ static QDF_STATUS wma_update_supported_bands(
 		wma_err("NULL new supported band variable");
 		return QDF_STATUS_E_FAILURE;
 	}
+#ifdef CONFIG_TARGET_PRODUCT_UKE
+	/* The uke firmware reports both bands on a single MAC. */
+	if (supported_bands == (WLAN_2G_CAPABILITY | WLAN_5G_CAPABILITY)) {
+		*new_supported_bands |= WMI_11G_CAPABILITY | WMI_11A_CAPABILITY;
+		return status;
+	}
+#endif
 	switch (supported_bands) {
 	case WLAN_2G_CAPABILITY:
 		*new_supported_bands |= WMI_11G_CAPABILITY;
