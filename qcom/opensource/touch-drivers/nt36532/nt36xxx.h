@@ -354,6 +354,7 @@ struct nvt_ts_data {
 	int gesture_command;
 	int gesture_command_delayed;
 	bool dev_pm_suspend;
+	bool irq_wake_enabled;
 	struct completion dev_pm_suspend_completion;
 	/* gesture mode setup end */
 	/* resume use work queue setup */
@@ -574,6 +575,8 @@ int32_t nvt_get_xm_htc_poll_info(void);
 int32_t nvt_xm_htc_set_idle_wake_th(int16_t idle_wake_th);
 int32_t nvt_xm_htc_set_stylus_enable(int16_t stylus_enable);
 int32_t nvt_xm_htc_set_gesture_switch(int16_t gesture_switch);
+int32_t nvt_xm_htc_set_gesture_dbclk(int16_t gesture_dbclk);
+int32_t nvt_xm_htc_set_click_gesture_enable(int16_t click_gesture_enable);
 int32_t nvt_xm_htc_set_idle_high_base_en(int16_t idle_high_base_en);
 int32_t nvt_set_pen_switch(uint8_t pen_switch);
 int32_t nvt_set_active_pen_stationary(uint8_t pen_stationary);

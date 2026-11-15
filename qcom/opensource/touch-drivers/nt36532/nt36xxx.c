@@ -72,9 +72,7 @@ extern ssize_t mi_dsi_panel_lockdown_info_read(unsigned char *plockdowninfo);
 static int32_t nvt_ts_suspend(struct device *dev);
 static int32_t nvt_ts_resume(struct device *dev);
 static int32_t nvt_ts_resume_suspend(bool is_resume, u8 gesture_type);
-/* uke/CP2A: declared for the piano-w-oss display stack only; see the
- * guarded call in nvt_set_gesture_mode(). Not defined in this tree. */
-/* extern void dsi_panel_gesture_enable(bool on); */
+extern void dsi_panel_doubleclick_enable(bool on);
 
 // for ic_self_test
 #define NORMAL_MODE 0x00
@@ -3596,12 +3594,12 @@ static void nvt_init_touchmode_data(void)
 	touch_mode[DATA_MODE_22][SET_CUR_VALUE] = 0;
 	touch_mode[DATA_MODE_22][GET_CUR_VALUE] = 0;
 
-	/* DATA_MODE_24 */
+	/* DATA_MODE_24: allow the pen shorthand (pen gesture) reports */
 	touch_mode[DATA_MODE_24][GET_MAX_VALUE] = 1;
 	touch_mode[DATA_MODE_24][GET_MIN_VALUE] = 0;
-	touch_mode[DATA_MODE_24][GET_DEF_VALUE] = 0;
-	touch_mode[DATA_MODE_24][SET_CUR_VALUE] = 0;
-	touch_mode[DATA_MODE_24][GET_CUR_VALUE] = 0;
+	touch_mode[DATA_MODE_24][GET_DEF_VALUE] = 1;
+	touch_mode[DATA_MODE_24][SET_CUR_VALUE] = 1;
+	touch_mode[DATA_MODE_24][GET_CUR_VALUE] = 1;
 
 	/* DATA_MODE_33 */
 	touch_mode[DATA_MODE_33][GET_MAX_VALUE] = 1;
@@ -3643,18 +3641,7 @@ static void nvt_set_gesture_mode(int value)
 	} else if (ts->ic_state >= NVT_IC_RESUME_OUT) {
 		NVT_LOG("Screen on, set gesture flag(%02x), ic state is %d", value, ts->ic_state);
 		ts->gesture_command = value;
-		/* uke/CP2A: dsi_panel_gesture_enable() exists only on the
-		 * piano-w-oss display driver, where it feeds tddi_gesture_flag
-		 * and eight TDDI-aware power-off sites in msm/dsi/dsi_panel.c.
-		 * Neither this tree's display driver nor Xiaomi's own uke-v-oss
-		 * one has that layer (0 references on both), so the symbol
-		 * cannot be linked and the call would be a no-op anyway.
-		 * Guarded rather than stubbed: no fabricated symbol is
-		 * exported and the display stack is untouched. Touch reporting
-		 * is unaffected; only double-tap gesture wake is, and that is
-		 * unsupported on uke regardless.
-		 *   dsi_panel_gesture_enable(!!ts->gesture_command);
-		 */
+		dsi_panel_doubleclick_enable(!!ts->gesture_command);
 	}
 }
 
@@ -3666,10 +3653,16 @@ static int nvt_enable_gesture_mode(int value)
 	uint8_t singletap_enable = 0;
 	uint8_t buf[4] = {0};
 
-	// set gesture enable/disable
-	nvt_xm_htc_set_gesture_switch(ts->gesture_command & 0xFFFF);
-
 	if (value) {
+		doubletap_enable = !!(ts->gesture_command & 0x01);
+		pen_shorthand_enable = !!(ts->gesture_command & 0x02);
+		singletap_enable = !!(ts->gesture_command & 0x04);
+
+		// set gesture enable/disable
+		nvt_xm_htc_set_gesture_switch(ts->gesture_command & 0xFFFF);
+		nvt_xm_htc_set_gesture_dbclk(doubletap_enable);
+		nvt_xm_htc_set_click_gesture_enable(singletap_enable);
+
 		msleep(35);
 		/*---write command to enter "wakeup gesture mode"---*/
 		buf[0] = EVENT_MAP_HOST_CMD;
@@ -3678,12 +3671,13 @@ static int nvt_enable_gesture_mode(int value)
 		if (ret < 0) {
 			NVT_ERR("set cmd failed!\n");
 		}
-		doubletap_enable = ts->gesture_command & 0x01;
-		pen_shorthand_enable = ts->gesture_command & 0x02;
-		singletap_enable = ts->gesture_command & 0x04;
 		NVT_LOG("Gesture mode on, %s doubletap gesture, %s pen shorthand gesture, %s singletap gesture\n",
 				doubletap_enable ? "Enable" : "Disable", pen_shorthand_enable ? "Enable" : "Disable", singletap_enable ? "Enable" : "Disable");
 	} else {
+		nvt_xm_htc_set_gesture_switch(0);
+		nvt_xm_htc_set_gesture_dbclk(0);
+		nvt_xm_htc_set_click_gesture_enable(0);
+
 		/*---write command to enter "deep sleep mode"---*/
 		buf[0] = EVENT_MAP_HOST_CMD;
 		buf[1] = 0x11;
@@ -4948,6 +4942,7 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 	ts->input_dev->name = NVT_TS_NAME;
 	ts->input_dev->phys = ts->phys;
 	ts->input_dev->id.bustype = BUS_SPI;
+	ts->input_dev->dev.parent = &client->dev;
 
 	//---register input device---
 	ret = input_register_device(ts->input_dev);
@@ -4997,6 +4992,7 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 		ts->pen_input_dev_m80p->name = NVT_M80P_PEN_NAME;
 		ts->pen_input_dev_m80p->phys = ts->pen_phys;
 		ts->pen_input_dev_m80p->id.bustype = BUS_SPI;
+		ts->pen_input_dev_m80p->dev.parent = &client->dev;
 		//---improve evdev buffer size to 1024---
 		ts->pen_input_dev_m80p->hint_events_per_packet = 128;
 
@@ -5039,6 +5035,7 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 		ts->pen_input_dev_p81c->name = NVT_P81C_PEN_NAME;
 		ts->pen_input_dev_p81c->phys = ts->pen_p81c_phys;
 		ts->pen_input_dev_p81c->id.bustype = BUS_SPI;
+		ts->pen_input_dev_p81c->dev.parent = &client->dev;
 		//---improve evdev buffer size to 1024---
 		ts->pen_input_dev_p81c->hint_events_per_packet = 128;
 
@@ -5284,6 +5281,11 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 #endif
 
 	bTouchIsAwake = 1;
+
+	/* Double-tap wake by default; the touch HAL can change it at runtime. */
+	if (!ts->gesture_command)
+		ts->gesture_command = 0x01;
+	dsi_panel_doubleclick_enable(!!ts->gesture_command);
 
 	nvt_irq_enable(true);
 
@@ -5587,13 +5589,22 @@ static int32_t nvt_ts_suspend(struct device *dev)
 		return 0;
 	}
 
+	if (!ts->gesture_command)
+		ts->gesture_command = 0x01;
+	dsi_panel_doubleclick_enable(!!ts->gesture_command);
 	NVT_LOG("start, gesture_command:0x%02x\n", ts->gesture_command);
 	pm_stay_awake(dev);
 	ts->ic_state = NVT_IC_SUSPEND_IN;
 
 	/* gesture mode setup */
-	if (!ts->gesture_command)
-			nvt_irq_enable(false);
+	if (!ts->gesture_command) {
+		nvt_irq_enable(false);
+	} else {
+		if (!ts->irq_wake_enabled) {
+			enable_irq_wake(ts->client->irq);
+			ts->irq_wake_enabled = true;
+		}
+	}
 	/* gesture mode setup end */
 
 #if NVT_TOUCH_ESD_PROTECT
@@ -5663,6 +5674,10 @@ static int32_t nvt_ts_resume(struct device *dev)
 	}
 
 	NVT_LOG("start\n");
+	if (ts->irq_wake_enabled) {
+		disable_irq_wake(ts->client->irq);
+		ts->irq_wake_enabled = false;
+	}
 	if (ts->dev_pm_suspend) {
 		pm_stay_awake(dev);
 		pm_wake_status = true;
@@ -5844,7 +5859,10 @@ static int nvt_pm_suspend(struct device *dev)
 
 	if (device_may_wakeup(dev) && ts->gesture_command) {
 		NVT_LOG("enable touch irq wake\n");
-		enable_irq_wake(ts->client->irq);
+		if (!ts->irq_wake_enabled) {
+			enable_irq_wake(ts->client->irq);
+			ts->irq_wake_enabled = true;
+		}
 	}
 	ts->dev_pm_suspend = true;
 	reinit_completion(&ts->dev_pm_suspend_completion);
@@ -5860,7 +5878,10 @@ static int nvt_pm_resume(struct device *dev)
 
 	if (device_may_wakeup(dev) && ts->gesture_command) {
 		NVT_LOG("disable touch irq wake\n");
-		disable_irq_wake(ts->client->irq);
+		if (ts->irq_wake_enabled) {
+			disable_irq_wake(ts->client->irq);
+			ts->irq_wake_enabled = false;
+		}
 	}
 	ts->dev_pm_suspend = false;
 	complete(&ts->dev_pm_suspend_completion);
