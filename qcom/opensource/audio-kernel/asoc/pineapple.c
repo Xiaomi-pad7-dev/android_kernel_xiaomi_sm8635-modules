@@ -1736,6 +1736,9 @@ static int msm_snd_card_late_probe(struct snd_soc_card *card)
 		return -EINVAL;
 	}
 
+	if (of_property_read_bool(card->dev->of_node, "qcom,no-mbhc-jack"))
+		return 0;
+
 	mbhc_calibration = def_wcd_mbhc_cal();
 	if (!mbhc_calibration)
 		return -ENOMEM;
