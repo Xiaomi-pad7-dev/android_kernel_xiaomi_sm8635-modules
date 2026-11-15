@@ -295,3 +295,8 @@ msm_drm-$(CONFIG_DRM_MSM) += mi_disp/mi_disp_core.o \
 			     mi_disp/mi_sde_encoder.o \
 			     mi_disp/mi_sde_connector.o
 
+# KTZ8866 backlight of the Xiaomi Pad 7 (uke) panels
+ifeq ($(lastword $(subst _, ,$(TARGET_PRODUCT))),uke)
+ccflags-y += -DCONFIG_TARGET_PRODUCT_UKE
+msm_drm-$(CONFIG_DRM_MSM) += mi_disp/mi_backlight_ktz8866.o
+endif

@@ -30,6 +30,9 @@
 #include "sde_trace.h"
 
 #include "mi_disp_feature.h"
+#ifdef CONFIG_TARGET_PRODUCT_UKE
+#include "mi_backlight_ktz8866.h"
+#endif
 #include "mi_dsi_display.h"
 #include "mi_disp_print.h"
 #include "mi_disp_lhbm.h"
@@ -9674,6 +9677,9 @@ void dsi_display_report_dead(struct dsi_display *display)
 void __init dsi_display_register(void)
 {
 #ifdef MI_DISPLAY_MODIFY
+#ifdef CONFIG_TARGET_PRODUCT_UKE
+	mi_backlight_ktz8866_init();
+#endif
 	mi_disp_feature_init();
 #endif
 	dsi_phy_drv_register();
