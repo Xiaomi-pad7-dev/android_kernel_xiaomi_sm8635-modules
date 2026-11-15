@@ -26,6 +26,12 @@ ifeq ($(CONFIG_ARCH_PINEAPPLE), y)
 	LINUX_INC += -include $(TOUCH_ROOT)/config/gki_pineappletouchconf.h
 endif
 
+# Xiaomi Pad 7 (uke)
+ifeq ($(lastword $(subst _, ,$(TARGET_PRODUCT))),uke)
+	include $(TOUCH_ROOT)/config/gki_uketouch.conf
+	LINUX_INC += -include $(TOUCH_ROOT)/config/gki_uketouchconf.h
+endif
+
 ifeq ($(CONFIG_ARCH_VOLCANO), y)
 	include $(TOUCH_ROOT)/config/gki_pineappletouch.conf
 	LINUX_INC += -include $(TOUCH_ROOT)/config/gki_pineappletouchconf.h
@@ -241,6 +247,20 @@ ifeq ($(CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE), y)
 		 ./xiaomi/xiaomi_touch.o \
 
 	obj-$(CONFIG_MSM_TOUCH) += xiaomi_touch.o
+endif
+
+ifeq ($(CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_V2), y)
+	xiaomi_touchfeature-y := \
+		 ./xiaomi_touchfeature/xiaomi_touch_knock_data.o \
+		 ./xiaomi_touchfeature/xiaomi_touch_core.o \
+		 ./xiaomi_touchfeature/xiaomi_touch_proc.o \
+		 ./xiaomi_touchfeature/xiaomi_touch_operations.o \
+		 ./xiaomi_touchfeature/xiaomi_touch_sys.o \
+		 ./xiaomi_touchfeature/xiaomi_touch_mode.o \
+		 ./xiaomi_touchfeature/xiaomi_touch_evdev.o \
+		 ./xiaomi_touchfeature/xiaomi_touch_device.o
+
+	obj-$(CONFIG_MSM_TOUCH) += xiaomi_touchfeature.o
 endif
 
 ifneq ($(CONFIG_ARCH_PINEAPPLE), y)
