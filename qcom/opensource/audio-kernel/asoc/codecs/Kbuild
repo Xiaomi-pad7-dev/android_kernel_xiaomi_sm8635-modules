@@ -297,7 +297,7 @@ ifneq (, $(filter $(word 2,$(subst _, ,$(TARGET_PRODUCT))), goku))
 	CDEFINES += -DCONFIG_TARGET_PRODUCT_GOKU
 endif
 
-ifneq (, $(filter $(word 2,$(subst _, ,$(TARGET_PRODUCT))), uke))
+ifneq (, $(filter $(lastword $(subst _, ,$(TARGET_PRODUCT))), uke))
 	CDEFINES += -DCONFIG_TARGET_PRODUCT_UKE
 endif
 

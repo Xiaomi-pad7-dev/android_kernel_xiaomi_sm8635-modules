@@ -149,7 +149,7 @@ ifneq (, $(filter $(word 2,$(subst _, ,$(TARGET_PRODUCT))), muyu))
     CDEFINES += -DCONFIG_TARGET_PRODUCT_MUYU
 endif
 
-ifneq (, $(filter $(word 2,$(subst _, ,$(TARGET_PRODUCT))), uke))
+ifneq (, $(filter $(lastword $(subst _, ,$(TARGET_PRODUCT))), uke))
     CDEFINES += -DCONFIG_TARGET_PRODUCT_UKE
 endif
 

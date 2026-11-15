@@ -303,7 +303,7 @@ ifneq (, $(filter $(word 2,$(subst _, ,$(TARGET_PRODUCT))), peridot))
 	CDEFINES += -DCONFIG_TARGET_PRODUCT_PERIDOT
 endif
 
-ifneq (, $(filter $(word 2,$(subst _, ,$(TARGET_PRODUCT))), uke))
+ifneq (, $(filter $(lastword $(subst _, ,$(TARGET_PRODUCT))), uke))
 	CDEFINES += -DCONFIG_TARGET_PRODUCT_UKE
 endif
 
