@@ -329,7 +329,10 @@ static int fsm_startup(struct snd_pcm_substream *substream,
 }
 
 static void fsm_shutdown(struct snd_pcm_substream *substream,
-                         struct snd_soc_dai *dai) {}
+                         struct snd_soc_dai *dai) {
+  if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+    fsm_speaker_off();
+}
 
 static int fsm_set_sysclk(struct snd_soc_dai *codec_dai, int clk_id,
                           unsigned int freq, int dir) {
@@ -394,6 +397,10 @@ static int fsm_hw_params(struct snd_pcm_substream *substream,
   fsm_set_i2s_clocks(srate, bclk);
   pr_info("srate:%d, chn:%d, chn_size:%d, bclk:%d", srate, channel, chn_size,
           bclk);
+
+  /* The machine driver never calls mute_stream() */
+  if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+    fsm_speaker_onn();
 
   return 0;
 }

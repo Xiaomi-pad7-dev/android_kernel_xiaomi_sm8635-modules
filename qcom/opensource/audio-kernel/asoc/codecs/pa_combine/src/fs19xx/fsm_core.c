@@ -1495,6 +1495,7 @@ void fsm_speaker_onn(void) {
   }
   fsm_list_func(fsm_dev, fsm_stub_switch_preset);
   fsm_list_func(fsm_dev, fsm_stub_start_up);
+  fsm_list_func_arg(fsm_dev, fsm_swap_channel, cfg->next_angle);
   cfg->cur_angle = cfg->next_angle;
   cfg->cur_scene = cfg->next_scene;
   cfg->speaker_on = true;
