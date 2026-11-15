@@ -1,5 +1,8 @@
 
 KBUILD_OPTIONS+= TOUCH_ROOT=$(KERNEL_SRC)/$(M)
+ifeq ($(lastword $(subst _, ,$(TARGET_PRODUCT))),uke)
+KBUILD_OPTIONS += KBUILD_EXTRA_SYMBOLS=$(OUT_DIR)/../sm8635-modules/qcom/opensource/display-drivers/msm/Module.symvers
+endif
 KBUILD_OPTIONS += MODNAME?=touch_dlkm
 
 all:
