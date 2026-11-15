@@ -16,6 +16,11 @@ include \
 	$(WLAN_PLATFORM_ROOT)/icnss2/sun_gki_defconfig
 endif
 
+# Xiaomi Pad 7 (uke)
+ifeq ($(lastword $(subst _, ,$(TARGET_PRODUCT))),uke)
+KBUILD_CPPFLAGS += -DCONFIG_TARGET_PRODUCT_UKE
+endif
+
 ifeq ($(CONFIG_CNSS_OUT_OF_TREE),y)
 KBUILD_CPPFLAGS += -DCONFIG_CNSS_OUT_OF_TREE
 endif

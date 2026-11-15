@@ -46,6 +46,40 @@
 #define BIN_BDF_FILE_NAME_PREFIX	"bdwlan."
 #define REGDB_FILE_NAME			"regdb.bin"
 
+#ifdef CONFIG_TARGET_PRODUCT_UKE
+#define HARDWARE_PROJECT_O82		11
+#define COUNTRY_GLOBAL			1
+#define COUNTRY_INDIA			2
+
+extern uint32_t get_hw_version_platform(void);
+extern uint32_t get_hw_country_version(void);
+
+static bool icnss_get_uke_bdf_name(struct icnss_priv *priv, char *filename,
+				   u32 filename_len)
+{
+	const char *name;
+
+	if (priv->board_id != 0xFF ||
+	    get_hw_version_platform() != HARDWARE_PROJECT_O82)
+		return false;
+
+	switch (get_hw_country_version()) {
+	case COUNTRY_GLOBAL:
+		name = "bd_o82gl.elf";
+		break;
+	case COUNTRY_INDIA:
+		name = "bd_o82in.elf";
+		break;
+	default:
+		name = "bd_o82.elf";
+		break;
+	}
+
+	snprintf(filename, filename_len, "%s", name);
+	return true;
+}
+#endif
+
 #define HW_V1_NUMBER			"v1"
 #ifdef CONFIG_ICNSS2_DEBUG
 #define QDSS_FILE_BUILD_STR		"debug_"
@@ -1065,6 +1099,10 @@ static int icnss_get_bdf_file_name(struct icnss_priv *priv,
 
 	switch (bdf_type) {
 	case ICNSS_BDF_ELF:
+#ifdef CONFIG_TARGET_PRODUCT_UKE
+		if (icnss_get_uke_bdf_name(priv, filename_tmp, filename_len))
+			break;
+#endif
 		if (priv->board_id == 0xFF)
 			snprintf(filename_tmp, filename_len, ELF_BDF_FILE_NAME);
 		else if (priv->board_id < 0xFF)
@@ -1099,6 +1137,12 @@ static int icnss_get_bdf_file_name(struct icnss_priv *priv,
 		}
 		break;
 	case ICNSS_BDF_REGDB:
+#ifdef CONFIG_TARGET_PRODUCT_UKE
+		if (get_hw_version_platform() == HARDWARE_PROJECT_O82) {
+			snprintf(filename_tmp, filename_len, "regdb_xiaomi.bin");
+			break;
+		}
+#endif
 		snprintf(filename_tmp, filename_len, REGDB_FILE_NAME);
 		break;
 	default:
