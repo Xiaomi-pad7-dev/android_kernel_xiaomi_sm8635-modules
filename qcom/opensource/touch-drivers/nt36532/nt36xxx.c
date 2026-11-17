@@ -3658,10 +3658,17 @@ static int nvt_enable_gesture_mode(int value)
 		pen_shorthand_enable = !!(ts->gesture_command & 0x02);
 		singletap_enable = !!(ts->gesture_command & 0x04);
 
-		// set gesture enable/disable
-		nvt_xm_htc_set_gesture_switch(ts->gesture_command & 0xFFFF);
 		nvt_xm_htc_set_gesture_dbclk(doubletap_enable);
 		nvt_xm_htc_set_click_gesture_enable(singletap_enable);
+
+		/* Set the pen shorthand gesture explicitly, as the uke stock driver does. */
+		msleep(35);
+		buf[0] = EVENT_MAP_HOST_CMD;
+		buf[1] = 0x7B;
+		buf[2] = pen_shorthand_enable;
+		ret = CTP_SPI_WRITE(ts->client, buf, 3);
+		if (ret < 0)
+			NVT_ERR("set pen shorthand gesture failed!\n");
 
 		msleep(35);
 		/*---write command to enter "wakeup gesture mode"---*/
@@ -3674,7 +3681,6 @@ static int nvt_enable_gesture_mode(int value)
 		NVT_LOG("Gesture mode on, %s doubletap gesture, %s pen shorthand gesture, %s singletap gesture\n",
 				doubletap_enable ? "Enable" : "Disable", pen_shorthand_enable ? "Enable" : "Disable", singletap_enable ? "Enable" : "Disable");
 	} else {
-		nvt_xm_htc_set_gesture_switch(0);
 		nvt_xm_htc_set_gesture_dbclk(0);
 		nvt_xm_htc_set_click_gesture_enable(0);
 
@@ -5632,12 +5638,6 @@ static int32_t nvt_ts_suspend(struct device *dev)
 		suspend_mode_proc(XIAOMI_DATA_MODE_27);
 #endif
 	ts->gamemode_enable = 0;  /*suspend, gamemode to false, resume wait thp update*/
-
-	if (ts->pen_bluetooth_connect) {
-		ts->need_send_hopping_ack = false;
-		nvt_pen_hopping_frequency(0, 0);
-		NVT_LOG("MIPP reset stylus to main freq");
-	}
 
 	bTouchIsAwake = 0;
 
